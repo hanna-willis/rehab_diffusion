@@ -1,0 +1,864 @@
+---
+title: "diffusion_analysis_shared"
+author: "Hanna Willis"
+date: "15/02/2024"
+output: html_document
+---
+# ------------ LOAD PACKAGES ------------
+```{r}
+library(ggplot2)
+library(emmeans)
+```
+
+# ------------ LOAD DATA ------------
+```{r, include=FALSE}
+# Behavioural results
+ppt_details_change <- read.csv('/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/all_behaviour_Feb24.csv')
+
+# Diffusion change
+change_all <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/change_all.csv")
+change_all_distal <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/change_all_distal.csv")
+
+# Full tract for hMT+ 
+hMT_fulltract_data_trained_only <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/hMT_fulltract_data_trained_only.csv")
+
+# Distal dLGN for all timepoints 
+hMT_distal_data_alltime <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/hMT_distal_data_alltime.csv")
+
+# Distal dLGN in sighted field after training
+combined_df <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/combined_df.csv")
+```
+
+# ------------ MANIPULATE DATAFRAMES ------------
+```{r}
+# Set up factor levels 
+hMT_fulltract_data_trained_only$Timepoint <- factor(hMT_fulltract_data_trained_only$Timepoint, levels = c("Pre-Baseline", "Pre-Training", "Post-Training"))
+hMT_distal_data_alltime$Timepoint <- factor(hMT_distal_data_alltime$Timepoint, levels = c("Pre-Baseline", "Pre-Training", "Post-Training"))
+combined_df$Timepoint <- factor(combined_df$Timepoint, levels = c("Pre-Baseline", "Pre-Training", "Post-Training"))
+
+# Manipulate dataframes
+ppt_details_change_MRI <- ppt_details_change[!grepl("R016|R021", ppt_details_change$Subj),]
+hMT_distal_data_trained_only_sight <- combined_df[grepl("sight", combined_df$hemisphere),]
+hMT_distal_data_trained_only <- combined_df[grepl("blind", combined_df$hemisphere),]
+
+# Include only ppt who have both timepoints
+hMT_distal_data_pretrain <- hMT_distal_data_alltime %>%
+  group_by(subjectID) %>%
+  filter(all(c("Pre-Baseline", "Pre-Training") %in% Timepoint))
+
+## Remove Post-Training visit
+hMT_distal_data_pretrain_only <- hMT_distal_data_pretrain[!grepl("Post-Training", hMT_distal_data_pretrain$Timepoint),]
+
+
+# Shouldn't need these but check 
+
+#hMT_distal_data_trained_only$hemisphere <- "blind"
+#hMT_distal_data_trained_only_sight$hemisphere <- "sight"
+#combined_df <- rbind(hMT_distal_data_trained_only_sight, hMT_distal_data_trained_only)
+#hMT_distal_data_trained_only_sight <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/hMT_distal_data_trained_only_sight.csv")
+#hMT_distal_data_trained_only <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/hMT_distal_data_trained_only.csv")
+
+```
+
+# ------------ MAKE FIGURES ------------
+
+### Figure 4: Relationship between mean FA and behaviour
+```{r}
+# Motion discrimination 
+# ---------------------
+p3 <- ggplot(change_all, aes(x = change_motion_improve_ndr_pos, y = change_fa_hMT)) +
+  geom_point(size = 3, alpha = 0.4,colour="orange1") +
+  labs(x = "Improvement in \nNDR thresholds (%)", y= "Mean FA change") +
+  ggtitle("dLGN-hMT+") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(-0.05,0.05), breaks = seq(from=-0.04, to=0.04, by=0.02)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold",size=18)) 
+
+p2 <- ggplot(change_all, aes(x = change_motion_improve_ndr_pos, y = change_fa_v1)) +
+  geom_point(size = 3, alpha = 0.4,colour="#CC3399") +
+  labs(x = "Improvement in \nNDR thresholds (%)", y= "Mean FA change") +
+  ggtitle("dLGN-V1") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(-0.05,0.05), breaks = seq(from=-0.04, to=0.04, by=0.02)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold",size=18)) 
+
+p1 <- ggplot(change_all, aes(x = change_motion_improve_ndr_pos, y = change_fa_motor)) +
+  geom_point(size = 3, alpha = 0.4,colour="dodgerblue") +
+  labs(x = "Improvement in \nNDR thresholds (%)", y= "Mean FA change") +
+  ggtitle("VPL-S1") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(-0.05,0.05), breaks = seq(from=-0.04, to=0.04, by=0.02)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold",size=18)) 
+
+# HVF area improved
+# ---------------------
+p3 <- ggplot(change_all, aes(x = area_improve_hvf, y = change_fa_hMT)) +
+  geom_point(size = 3, alpha = 0.4,colour="orange1") +
+  labs(y= "Mean FA change", x = expression("Area Improved (" * deg^2 * ")")) +
+  ggtitle("dLGN-hMT+") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(-0.05,0.05), breaks = seq(from=-0.05, to=0.05, by=0.02)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold",size=18)) 
+
+## --------- V1 ---------
+p2 <- ggplot(change_all, aes(x = area_improve_hvf, y = change_fa_v1)) +
+  geom_point(size = 3, alpha = 0.4,colour="#CC3399") +
+  labs(y= "Mean FA change", x = expression("Area Improved (" * deg^2 * ")")) +
+  ggtitle("dLGN-V1") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(-0.05,0.05), breaks = seq(from=-0.05, to=0.05, by=0.02)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold",size=18)) 
+
+## --------- VPL ---------
+p1 <- ggplot(change_all, aes(x = area_improve_hvf, y = change_fa_motor)) +
+  geom_point(size = 3, alpha = 0.4,colour="dodgerblue") +
+  labs(y= "Mean FA change", x = expression("Area Improved (" * deg^2 * ")")) +
+  ggtitle("VPL-S1") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(-0.05,0.05), breaks = seq(from=-0.05, to=0.05, by=0.02)) +
+  theme(plot.title = element_text(hjust = 0.5, face="bold",size=18)) 
+```
+
+### Figure 5: The distal dLGN-hMT+ tract (pre-post training) 
+```{r}
+# 1) FA along full tract
+# ----------------------
+
+# Calculate SEM
+hMT_full_tract_data_trained_fig <- hMT_fulltract_data_trained_only %>%
+  group_by(nodeID, Timepoint) %>%
+  summarise(Mean_FA = mean(fa), SEM = sd(fa) / sqrt(length(fa)))
+
+# Create a ggplot line plot with a smooth line and SEM error ribbons
+p1 <- ggplot(hMT_full_tract_data_trained_fig, aes(x = nodeID, y = Mean_FA, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_FA - SEM, ymax = Mean_FA + SEM, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average FA") +
+  ggtitle("Full dLGN-hMT+\n") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.23,0.50), breaks = seq(from=0.25, to=0.50, by=0.05)) +
+  scale_x_continuous(limits = c(15,85), breaks = seq(from=15, to=90, by=10)) +
+  theme(legend.position = c(0.7, 0.9)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p1
+
+# 2) diffusion metrics in distal tract 
+# ----------------------
+
+# Calculate the standard error of the mean (SEM) for each node and timepoint
+hMT_distal_data_trained_fig <- hMT_distal_data_trained_only %>%
+  group_by(nodeID, Timepoint) %>%
+  summarise(Mean_FA = mean(fa), SEM_FA = sd(fa) / sqrt(length(fa)),
+            Mean_MD = mean(md), SEM_MD = sd(md) / sqrt(length(md)),
+            Mean_NDI = mean(ndi), SEM_NDI = sd(ndi) / sqrt(length(ndi)),
+            Mean_ODI = mean(odi), SEM_ODI = sd(odi) / sqrt(length(odi)),
+            Mean_ISOVF = mean(isovf), SEM_ISOVF = sd(isovf) / sqrt(length(isovf)))
+
+p1 <- ggplot(hMT_distal_data_trained_fig, aes(x = nodeID, y = Mean_FA, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_FA - SEM_FA, ymax = Mean_FA + SEM_FA, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average FA") +
+  ggtitle("FA") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.23,0.40), breaks = seq(from=0.25, to=0.40, by=0.05)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "top") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p1
+
+p2 <- ggplot(hMT_distal_data_trained_fig, aes(x = nodeID, y = Mean_MD, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_MD - SEM_MD, ymax = Mean_MD + SEM_MD, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average MD") +
+  ggtitle("MD") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.80,1.10), breaks = seq(from=0.80, to=1.10, by=0.1)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p2
+
+p3 <- ggplot(hMT_distal_data_trained_fig, aes(x = nodeID, y = Mean_NDI, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_NDI - SEM_NDI, ymax = Mean_NDI + SEM_NDI, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average NDI") +
+  ggtitle("NDI") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.45,0.60), breaks = seq(from=0.45, to=0.60, by=0.05)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p3
+
+p4 <- ggplot(hMT_distal_data_trained_fig, aes(x = nodeID, y = Mean_ODI, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_ODI - SEM_ODI, ymax = Mean_ODI + SEM_ODI, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average ODI") +
+  ggtitle("ODI") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.14,0.32), breaks = seq(from=0.14, to=0.32, by=0.06)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "top") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p4
+
+p5 <- ggplot(hMT_distal_data_trained_fig, aes(x = nodeID, y = Mean_ISOVF, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_ISOVF - SEM_ISOVF, ymax = Mean_ISOVF + SEM_ISOVF, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average ISOVF") +
+  ggtitle("ISOVF") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.02,0.08), breaks = seq(from=0.02, to=0.08, by=0.02)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p5
+
+```
+
+### Figure 6: The distal dLGN-hMT+ tract (pre-baseline-pre-training)
+```{r}
+
+# Calculate the standard error of the mean (SEM) for each node and timepoint
+hMT_distal_data_pretrain_fig <- hMT_distal_data_pretrain_only %>%
+  group_by(nodeID, Timepoint) %>%
+  summarise(Mean_FA = mean(fa), SEM_FA = sd(fa) / sqrt(length(fa)),
+            Mean_MD = mean(md), SEM_MD = sd(md) / sqrt(length(md)),
+            Mean_NDI = mean(ndi), SEM_NDI = sd(ndi) / sqrt(length(ndi)),
+            Mean_ODI = mean(odi), SEM_ODI = sd(odi) / sqrt(length(odi)),
+            Mean_ISOVF = mean(isovf), SEM_ISOVF = sd(isovf) / sqrt(length(isovf)))
+
+p1 <- ggplot(hMT_distal_data_pretrain_fig, aes(x = nodeID, y = Mean_FA, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_FA - SEM_FA, ymax = Mean_FA + SEM_FA, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("grey","#FFCC33"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average FA") +
+  ggtitle("FA") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.23,0.40), breaks = seq(from=0.25, to=0.40, by=0.05)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p1
+
+p2 <- ggplot(hMT_distal_data_pretrain_fig, aes(x = nodeID, y = Mean_MD, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_MD - SEM_MD, ymax = Mean_MD + SEM_MD, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("grey","#FFCC33"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average MD") +
+  ggtitle("MD") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.80,1.10), breaks = seq(from=0.80, to=1.10, by=0.1)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p2
+
+p3 <- ggplot(hMT_distal_data_pretrain_fig, aes(x = nodeID, y = Mean_NDI, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_NDI - SEM_NDI, ymax = Mean_NDI + SEM_NDI, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("grey","#FFCC33"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average NDI") +
+  ggtitle("NDI") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.45,0.60), breaks = seq(from=0.45, to=0.60, by=0.05)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p3
+
+p4 <- ggplot(hMT_distal_data_pretrain_fig, aes(x = nodeID, y = Mean_ODI, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_ODI - SEM_ODI, ymax = Mean_ODI + SEM_ODI, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("grey","#FFCC33"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average ODI") +
+  ggtitle("ODI") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.14,0.32), breaks = seq(from=0.14, to=0.32, by=0.06)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p4
+
+p5 <- ggplot(hMT_distal_data_pretrain_fig, aes(x = nodeID, y = Mean_ISOVF, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_ISOVF - SEM_ISOVF, ymax = Mean_ISOVF + SEM_ISOVF, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("grey","#FFCC33"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average ISOVF") +
+  ggtitle("ISOVF") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0,0.12), breaks = seq(from=0, to=0.12, by=0.04)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p5
+
+```
+
+### Figure 8: Sighted dLGN-hMT+ (supplementary materials)
+```{r}
+# Calculate the standard error of the mean (SEM) for each node and timepoint
+hMT_distal_data_trained_fig_sight <- hMT_distal_data_trained_only_sight %>%
+  group_by(nodeID, Timepoint) %>%
+  summarise(Mean_FA = mean(fa), SEM_FA = sd(fa) / sqrt(length(fa)),
+            Mean_MD = mean(md), SEM_MD = sd(md) / sqrt(length(md)),
+            Mean_NDI = mean(ndi), SEM_NDI = sd(ndi) / sqrt(length(ndi)),
+            Mean_ODI = mean(odi), SEM_ODI = sd(odi) / sqrt(length(odi)),
+            Mean_ISOVF = mean(isovf), SEM_ISOVF = sd(isovf) / sqrt(length(isovf)))
+
+p1 <- ggplot(hMT_distal_data_trained_fig_sight, aes(x = nodeID, y = Mean_FA, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_FA - SEM_FA, ymax = Mean_FA + SEM_FA, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average FA") +
+  ggtitle("FA") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.23,0.40), breaks = seq(from=0.25, to=0.40, by=0.05)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "top") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p1
+
+p2 <- ggplot(hMT_distal_data_trained_fig_sight, aes(x = nodeID, y = Mean_MD, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_MD - SEM_MD, ymax = Mean_MD + SEM_MD, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average MD") +
+  ggtitle("MD") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.80,1.10), breaks = seq(from=0.80, to=1.10, by=0.1)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p2
+
+p3 <- ggplot(hMT_distal_data_trained_fig_sight, aes(x = nodeID, y = Mean_NDI, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_NDI - SEM_NDI, ymax = Mean_NDI + SEM_NDI, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average NDI") +
+  ggtitle("NDI") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.45,0.65), breaks = seq(from=0.45, to=0.65, by=0.05)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p3
+
+p4 <- ggplot(hMT_distal_data_trained_fig_sight, aes(x = nodeID, y = Mean_ODI, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_ODI - SEM_ODI, ymax = Mean_ODI + SEM_ODI, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average ODI") +
+  ggtitle("ODI") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.14,0.32), breaks = seq(from=0.14, to=0.32, by=0.06)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p4
+
+p5 <- ggplot(hMT_distal_data_trained_fig_sight, aes(x = nodeID, y = Mean_ISOVF, color = Timepoint, group = Timepoint)) +
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = Mean_ISOVF - SEM_ISOVF, ymax = Mean_ISOVF + SEM_ISOVF, fill = Timepoint), alpha = 0.3, color = NA) +
+  scale_fill_manual(values = c("#FFCC33","orange1"), aesthetics = c("color", "fill")) +
+  labs(x = "Node", y= "Average ISOVF") +
+  ggtitle("ISOVF") +
+  theme_classic(base_size = 18) +
+  scale_y_continuous(limits = c(0.02,0.10), breaks = seq(from=0.02, to=0.10, by=0.02)) +
+  scale_x_continuous(limits = c(60,85), breaks = seq(from=60, to=85, by=10)) +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+p5
+
+```
+
+# ------------ RUN STATS ------------
+
+# Behaviour change
+```{r}
+# Motion discrimination
+# ---------------------
+## Perc correct
+mean(ppt_details_change_MRI$pre_motion_improve_perc)
+sd(ppt_details_change_MRI$pre_motion_improve_perc)
+mean(ppt_details_change_MRI$post_motion_improve_perc)
+sd(ppt_details_change_MRI$post_motion_improve_perc)
+t.test(ppt_details_change_MRI$pre_motion_improve_perc, ppt_details_change_MRI$post_motion_improve_perc, paired = TRUE)
+
+## NDR
+mean(ppt_details_change_MRI$pre_motion_improve_ndr)
+sd(ppt_details_change_MRI$pre_motion_improve_ndr)
+mean(ppt_details_change_MRI$post_motion_improve_ndr)
+sd(ppt_details_change_MRI$post_motion_improve_ndr)
+t.test(ppt_details_change_MRI$pre_motion_improve_ndr, ppt_details_change_MRI$post_motion_improve_ndr, paired = TRUE)
+
+# HVF
+# ---------------------
+
+## Area improved (R002 and R014 removed due to errors outside norm)
+ppt_details_changexR002xR014 <- ppt_details_change_MRI[!grepl("R002|R014", ppt_details_change_MRI$Subj),]
+mean(ppt_details_changexR002xR014$area_improve_hvf)
+sd(ppt_details_changexR002xR014$area_improve_hvf)
+range(ppt_details_changexR002xR014$area_improve_hvf)
+t.test(ppt_details_changexR002xR014$area_improve_hvf, mu = 0)
+
+# Relationship between behaviour
+# ---------------------
+model <- lm(change_motion_improve_ndr~area_improve_hvf, data=ppt_details_changexR002xR014)
+summary(model)
+
+```
+
+# Mean diffusion metrics and behaviour
+```{r} 
+# Create an empty data frame to store regression results
+regression_results <- data.frame(
+  Independent_Variable = character(),
+  Dependent_Variable = character(),
+  Adjusted_R2 = numeric(),
+  F_Stat = numeric(),
+  Degrees_of_Freedom = integer(),
+  P_Value = numeric()
+)
+
+# Loop through each independent variable you want to regress
+independent_variables <- c("change_fa_v1", "change_fa_motor","change_fa_hMT","change_md_hMT", "change_rd_hMT", "change_ad_hMT","change_ndi_hMT","change_odi_hMT","change_isovf_hMT","baseline_fa_hMT","baseline_fa_v1","baseline_fa_motor")
+
+
+# Loop through each dependent variable
+dependent_variables <- c("change_motion_improve_ndr_pos", "area_improve_hvf")
+  
+for (dependent_var in dependent_variables) {
+  for (independent_var in independent_variables) {
+  # Perform linear regression
+  lm_model <- lm(paste(dependent_var, "~", independent_var, sep = ""), data = change_all)
+
+  # Extract regression results and store them in a data frame
+  results <- tidy(lm_model)
+  
+  # Calculate adjusted R-squared
+  adjusted_r2 <- summary(lm_model)$adj.r.squared
+  
+  # Calculate degrees of freedom
+  df <- summary(lm_model)$fstatistic[3]
+  f_stat <- summary(lm_model)$fstatistic[1]
+    
+  # Calculate p-value
+  p_value <- summary(lm_model)$coefficients[2,4]
+  
+  # Add the dependent variable name and other results to the table
+  regression_results <- rbind(
+    regression_results,
+    data.frame(
+      Independent_Variable = independent_var,
+      Dependent_Variable = dependent_var,
+      Adjusted_R2 = adjusted_r2,
+      F_Stat = f_stat,
+      Degrees_of_Freedom = df,
+      P_Value = p_value
+    )
+  )
+}}
+
+# Print the table with regression results
+print(regression_results)
+
+# To run without R011 
+## Without R011 from HVF - run again with this dataframe
+change_all_xR011 <- change_all[!grepl("R011", change_all$Subj),]
+
+```
+
+# Changes along the tract with training
+```{r}
+# FA
+# ------------
+# Run LME
+hMT_blind_fa_distal_model <- lmer(fa ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_trained_only)
+summary(hMT_blind_fa_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_fa_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+# MD 
+# ------------
+# Run LME
+hMT_blind_md_distal_model <- lmer(md ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_trained_only)
+summary(hMT_blind_md_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_md_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+# NDI
+# ------------
+# Run LME
+hMT_blind_ndi_distal_model <- lmer(ndi ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_trained_only)
+summary(hMT_blind_ndi_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_ndi_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+# ODI
+# ------------
+# Run LME
+hMT_blind_odi_distal_model <- lmer(odi ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_trained_only)
+summary(hMT_blind_odi_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_odi_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+# ISOVF 
+# ------------
+# Run LME
+hMT_blind_isovf_distal_model <- lmer(isovf ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_trained_only)
+summary(hMT_blind_isovf_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_isovf_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+```
+
+# Changes along the tract without training
+```{r}
+## FA 
+# ------------
+# Run LME
+hMT_blind_fa_distal_model <- lmer(fa ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_pretrain_only)
+summary(hMT_blind_fa_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_fa_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## MD
+# ------------
+hMT_blind_md_distal_model <- lmer(md ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_pretrain_only)
+summary(hMT_blind_md_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_md_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## NDI
+# ------------
+hMT_blind_ndi_distal_model <- lmer(ndi ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_pretrain_only)
+summary(hMT_blind_ndi_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_ndi_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## ODI
+# ------------
+hMT_blind_odi_distal_model <- lmer(odi ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_pretrain_only)
+summary(hMT_blind_odi_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_odi_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## ISOVF
+# ------------
+hMT_blind_isovf_distal_model <- lmer(isovf ~ 1 + Timepoint + nodeID +
+                      (1|subjectID), 
+                    data = hMT_distal_data_pretrain_only)
+summary(hMT_blind_isovf_distal_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_isovf_distal_model, specs = ~Timepoint + nodeID)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+```
+
+# Distal dLGN metrics and changes in behaviour
+```{r}
+# Create an empty data frame to store regression results
+regression_results <- data.frame(
+  Independent_Variable = character(),
+  Dependent_Variable = character(),
+  Adjusted_R2 = numeric(),
+  F_Stat = numeric(),
+  Degrees_of_Freedom = integer(),
+  P_Value = numeric()
+)
+
+# Loop through each independent variable you want to regress
+independent_variables <- c("change_fa_hMT","change_md_hMT", "change_rd_hMT", "change_ad_hMT","change_ndi_hMT","change_odi_hMT","change_isovf_hMT")
+
+
+# Loop through each dependent variable
+dependent_variables <- c("change_motion_improve_ndr_pos", "area_improve_hvf")
+  
+for (dependent_var in dependent_variables) {
+  for (independent_var in independent_variables) {
+  # Perform linear regression
+  lm_model <- lm(paste(dependent_var, "~", independent_var, sep = ""), data = change_all_distal)
+
+  # Extract regression results and store them in a data frame
+  results <- tidy(lm_model)
+  
+  # Calculate adjusted R-squared
+  adjusted_r2 <- summary(lm_model)$adj.r.squared
+  
+  # Calculate degrees of freedom
+  df <- summary(lm_model)$fstatistic[3]
+  f_stat <- summary(lm_model)$fstatistic[1]
+    
+  # Calculate p-value
+  p_value <- summary(lm_model)$coefficients[2,4]
+  
+  # Add the dependent variable name and other results to the table
+  regression_results <- rbind(
+    regression_results,
+    data.frame(
+      Independent_Variable = independent_var,
+      Dependent_Variable = dependent_var,
+      Adjusted_R2 = adjusted_r2,
+      F_Stat = f_stat,
+      Degrees_of_Freedom = df,
+      P_Value = p_value
+    )
+  )
+}}
+
+# Print the table with regression results
+print(regression_results)
+
+```
+
+# Sighted dLGN-hMT+ (supplementary materials)
+```{r}
+## FA 
+# ------------
+# Run LME
+hMT_blind_fa_distal_model_combined <- lmer(fa ~ 1 + hemisphere * (nodeID + Timepoint) +
+                      (1|subjectID), 
+                      data = combined_df)
+summary(hMT_blind_fa_distal_model_combined)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_fa_distal_model_combined, specs = ~Timepoint *hemisphere)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## MD
+# --------------
+# Run LME
+hMT_blind_md_distal_model_combined <- lmer(md ~ 1 + hemisphere * (nodeID + Timepoint) +
+                      (1|subjectID), 
+                      data = combined_df)
+summary(hMT_blind_md_distal_model_combined)
+report(hMT_blind_md_distal_model_combined)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_md_distal_model_combined, specs = ~Timepoint *hemisphere)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## NDI
+# --------------
+# Run LME
+hMT_blind_ndi_distal_model_combined <- lmer(ndi ~ 1 + hemisphere * (nodeID + Timepoint) +
+                      (1|subjectID), 
+                      data = combined_df)
+summary(hMT_blind_ndi_distal_model_combined)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_ndi_distal_model_combined, specs = ~Timepoint *hemisphere)
+
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## ODI
+# --------------
+# Run LME
+hMT_blind_odi_distal_model_combined <- lmer(odi ~ 1 + hemisphere * (nodeID + Timepoint) +
+                      (1|subjectID), 
+                      data = combined_df)
+summary(hMT_blind_odi_distal_model_combined)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_odi_distal_model_combined, specs = ~Timepoint *hemisphere)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+## ISOVF
+# --------------
+# Run LME
+hMT_blind_isovf_distal_model_combined <- lmer(isovf ~ 1 + hemisphere * (nodeID + Timepoint) +
+                      (1|subjectID), 
+                      data = combined_df)
+summary(hMT_blind_isovf_distal_model_combined)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(hMT_blind_isovf_distal_model_combined, specs = ~Timepoint *hemisphere)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+# Adjust pvalues
+p_values_diff <- c(.0001,.02,.24,.0004,.007,.0075,.0001,.5798,.9964,.043)
+p.adjust(p_values_diff,method="holm") 
+
+```
+
+# Data quality checks (supplementary materials)
+```{r}
+# Mean FA in white matter
+# -----------------------
+mean_fa_wm <- mean_fa[grepl("white_matter", mean_fa$structureID),]
+
+## Summary data
+mean_fa_wm %>%
+  group_by(timepoint) %>%
+  get_summary_stats(fa_mean, type = "mean_sd")
+
+## LME
+mean_fa_model <- lmer(fa_mean ~ 1 + timepoint +
+                      (1|subjectID), 
+                    data = mean_fa_wm)
+summary(mean_fa_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(mean_fa_model, specs = ~timepoint)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+
+## SNR
+# -----------------------
+
+## Summary data
+all_snr %>%
+  group_by(timepoint) %>%
+  get_summary_stats(snr, type = "mean_sd")
+
+mean_fa_model <- lmer(snr ~ 1 + timepoint +
+                      (1|subj), 
+                    data = all_snr)
+summary(mean_fa_model)
+
+# Calculate EMMs and pairwise comparisons
+emm <- emmeans(mean_fa_model, specs = ~timepoint)
+
+# Perform pairwise comparisons, adjust for multiple comparisons (e.g., Tukey)
+comparisons <- pairs(emm, adjust = "tukey")
+
+# Display the results
+print(comparisons)
+
+# Tracts of interest
+# -----------------------
+# VPL
+t_test(vpl_all_blind_tractmeasures, average_FA ~ sessionID, paired=TRUE)
+
+# V1
+t_test(v1_all_blind_tractmeasures, average_FA ~ sessionID, paired=TRUE)
+
+# hMT
+t_test(hMT_all_blind_tractmeasures, average_FA ~ sessionID, paired=TRUE)
+
+```
