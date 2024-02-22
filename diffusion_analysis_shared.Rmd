@@ -13,20 +13,20 @@ library(emmeans)
 # ------------ LOAD DATA ------------
 ```{r, include=FALSE}
 # Behavioural results
-ppt_details_change <- read.csv('/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/all_behaviour_Feb24.csv')
+ppt_details_change <- read.csv('all_behaviour_Feb24.csv')
 
 # Diffusion change
-change_all <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/change_all.csv")
-change_all_distal <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/change_all_distal.csv")
+change_all <- read.csv("change_all.csv")
+change_all_distal <- read.csv("change_all_distal.csv")
 
 # Full tract for hMT+ 
-hMT_fulltract_data_trained_only <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/hMT_fulltract_data_trained_only.csv")
+hMT_fulltract_data_trained_only <- read.csv("hMT_fulltract_data_trained_only.csv")
 
 # Distal dLGN for all timepoints 
-hMT_distal_data_alltime <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/hMT_distal_data_alltime.csv")
+hMT_distal_data_alltime <- read.csv("hMT_distal_data_alltime.csv")
 
 # Distal dLGN in sighted field after training
-combined_df <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/combined_df.csv")
+combined_df <- read.csv("combined_df.csv")
 ```
 
 # ------------ MANIPULATE DATAFRAMES ------------
