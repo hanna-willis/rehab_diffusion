@@ -1,0 +1,214 @@
+---
+title: "Brainlife basics"
+author: "Hanna Willis"
+date: "12/10/2022"
+output: html_document
+---
+\
+\
+
+Brainlife.io is a tool to analyse neuroimaging data. This is a basic guide to brainlife written by Hanna Willis.
+https://github.com/brainlife/docs/tree/master/docs/tutorial
+\
+
+## Make a new project
+\
+After making a brainlife account, the first thing you need to do is make a new project (e.g. my project "Rehab in hemianopia project"). You can edit the project at any time by clicking on the 'edit' button highlighted. 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure1.png)
+\
+\
+You can then edit your project. For example you can change the name of the project by clicking on 'Detail', or add other administrators to the project using 'Access Control'. If you would like help from the brainlife team during your project you will need to add them as administrators so they can view your project. You can also add participant information by clicking on 'Participants Info'. It will be useful to have essential information about participants here e.g. age, gender. This needs to be formatted in a json format (there is a default example on all projects so just follow this)
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure2.png)
+\
+
+## Upload data
+
+\
+You can upload data to brainlife either manually (click 'Archive' and then 'Upload Data'), or using the CLI. I would recommend using the CLI because it is quicker and less prone to error (you just need a simple for loop to loop through your data and upload it to brainlife). See help of using the CLI here: https://brainlife.io/docs/cli/upload/. 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure3.png)
+\
+
+## Staging your data
+
+\
+To be able to run anything through the pipeline, it needs to be ‘staged’ – this means that it is copied to a computing resource. 
+\
+
+## Set up a pipeline
+
+\
+To analyse your data in brainlife, you first need to set up a pipeline. This means that you add a list of apps in order and tell them what inputs/outputs they should expect. Then as you add data to brainlife, it will automatically run through the pipeline. For example if you want to run FSLanat on your structural scan, you will tell it to expect the input 't1.nii.gz', then when you add more t1s to your dataset, FSLanat will automatically run on them. 
+\
+To setup a pipeline, go to the ‘Pipeline’ tab. You can then add a ‘Group’ – I split these into the different steps of processing e.g. preprocessing, generating ROIs etc to make my pipelines clearer. This is not a necessary step, but might make things easier to follow later on. Within a ‘Group’ you can then ‘Add Rule’.
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure4.png)
+\
+\
+You can then search for the app you want e.g. FSLanat.
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure5.png)
+\
+\
+Once you have selected the app you want, it will be added to your pipeline. To edit the app press the edit button highlighted below.
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure6.png)
+\
+\
+There are a few things you will need to change in the app:
+    - App information: these are the parameters you want to run 
+    - Inputs: the input data (i.e. what you want the app to run on). For example, the input for FSLanat is the raw T1 image.
+    - You can run the apps on selected subjects (Subject Filter) or sessions (Session filter). You can even use this function to pull       things from one timepoint to another (e.g. if you need an ROI quantified in the 'baseline' session to be moved into the             '6month'session)
+    - Outputs: the output data (i.e what the app with output after running the app). It is important to tag these (so you can feed it       into later apps) e.g. with ‘fsl_anat’. 
+    - Tagging is really important because as your pipeline (and outputs) become more complicated, you might have multiple copies of        each file, e.g. 2 t1s (one processed, and one unprocessed) and you want to tell later apps to use the preprocessed one (e.g.         the one you tagged with fsl_anat). 
+    - As you start typing tags, brainlife will update to tell you how many files have this tag (and therefore how many files the app       will run on). In the example below there are 4 files with this tag. If I remove the tag there are 8, so the app will run on all       8 files (processed and unprocessed) which is not what I want. Sometimes brainlife is a little slow to update the number of           files so it helps to click over to 'Output' and then back, or click 'OK' and then edit the app again so that it can refresh. It       should now be showing you the correct number of files.  
+\
+\
+Once you’re happy with all the inputs, outputs and app parameters click ‘OK’. 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure7.png)
+\
+\
+How to check if your app is working?
+  - You can toggle the app as ‘Active’ (will run through all your data) or ‘Inactive’
+  - You can check the ‘Detail’ to see why the app is not running on some subjects
+  - You can see how many subjects are ‘Waiting’ (this is usually because they don’t have the input data that the App asks for).
+  - You can see whether jobs have failed (red), being run (dark blue), waiting to be run (light blue) or done (green). 
+  - Once data are run through the app, they will be ‘Archived’ 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure8.png)
+\
+\
+
+## Troubleshooting
+
+-	Errors can happen for any number of reasons
+    1) You’ve done something wrong (e.g. data are not labelled correctly, or you have missed a step)
+        - Solution is to turn the app off (Inactive), ‘Remove jobs’, remove all outputs (search for these in ‘Archive’ and remove).
+        - Double check all your inputs/outputs are labelled correctly)
+        - Then reactivate the app and it will run the subjects again. 
+        - Sometimes removing and re-adding the app might also help. 
+        - Try a new resource (you’ll need to ask the brainlife team)
+    2) Brainlife is down (sometimes there are just weird glitches where things don’t work) – wait and resubmit jobs later or message         on the brainlife forum
+        - Common error messages are ‘filesytem loop detected’, ‘broken sim link, ‘error connect’, ‘econ refused’ – if you see these,            wait a bit of time and then delete process in ‘Preprocess tab’ and it will restart
+        -	Sometimes the error.log can help to determine what went wrong – you can find this under the ‘Preprocess’ tab, then click on           the failed task (you might have to do it a few times before it finds it), then scroll down to error.log and click on this             file 
+\
+\
+
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure9.png)
+\
+\
+
+## Making an App
+
+-	To run processes in brainlife, we use ‘apps’. 
+-	Many of these have already been created e.g. FSLanat, but if not then you’ll need to create them yourself e.g. roi-fslmath app. 
+-	To create an app you need to first login to (or create) a github account. 
+
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure10.png)
+\
+\
+-	Copy a previous app to your github (this is easier because then you have all the correct files). 
+-	You firstly need a config.json file which contains the inputs from brainlife. This is automatically populated by brainlife (and by    what the user inputs), but to test the app offline you’ll need to make this.  
+-	You then need a script (e.g. in bash) to do the thing you want e.g. run fslmaths on the two ROIs to segment one roi by the lesion. 
+- You need to make sure these scripts are executable - change permissions and then re-upload the files – for example using 'git add',   'git commit “make scripts executable”' 
+- Make sure this works locally before you try add it to brainlife
+-	Once you have created the script, you then need to input this to brainlife. You do this by going to ‘Apps’ and then ‘Register App’
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure11.png)
+\
+\
+-	You then need to tell brainlife the name of the app, the maintainers and where the source code is (i.e. your GitHub repository) 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure12.png)
+\
+\
+-	You then tell it what configurations the user can change (e.g. for the swap dimensions app we let users change the flip direction)
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure13.png)
+\
+\
+-	You also tell brainlife what the inputs and outputs are for the app 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure14.png)
+\
+\
+-	Once you’re happy press ‘Submit’
+-	The app then needs to then be added to a resource so you can test it to make sure it does what you think it does 
+\
+\
+
+# Check quality of your data
+
+\
+\
+- There are lots of apps that help you check your data quality. If you search for QA image in brainlife apps and you’ll see lots of    examples of QA analyses. For example:
+  - Anatomy data: T1, tissue type masks using QA apps
+      - Check freesurfer by clicking on the freesurfer output in the archive 
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/figure15.png)
+\
+\
+  - Diffusion data: 
+      - Dwi qa tool – regular dwi
+      - Dwi overlaid on t1 – alignment 
+      - Tensor – images for each measure 
+      - Noddi – images for each measure
+      - Odf – check corpus collosum 
+      - Response function – gives donut shape – check its flat with a sharp dip 
+      - SNR app 
+      - Tractmeasures from tract analyse profiles app – check how your data compares to other datasets 
+      - Generate whole brain figures of tck 
+      - App-wmc_figures – generate tracts on t1 – nice figures but also shows you crazy data > Add to pipeline, click image, click           eye then image viewer  
+      - White matter anatomy segmentation app – sanity check streamlines (similar between left and right hemi) – tracts ~100                 streamlines > eye > wmc tract view 
+\
+\
+
+# Example pipeline
+\
+\
+This is a pipeline for analysing the brains of stroke survivors across multiple timepoints so there may be some aspects of this pipeline that you do not need (e.g. removing the lesion from the visual areas). 
+\
+\
+
+## Preprocessing
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/preprocessing.png)
+
+## Check quality
+
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/quality.png)
+## Generate regions of interest
+
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/rois.png)
+## Running tractography analysis 
+
+\
+\
+![alt text](/Users/hwillis_admin/Desktop/PhD/CODE/brainlife_apps/brainlife_documentation/figs/tractography.png)
+
+## Check the tracts
+- install mrtrix https://www.mrtrix.org/download/linux-anaconda/
+- use multi-tck extraction to combine track and wmc
+- download these, with rois and t1
+- view in mrtrix locally
