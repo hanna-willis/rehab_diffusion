@@ -15,6 +15,9 @@ library(emmeans)
 # Behavioural results
 ppt_details_change <- read.csv('all_behaviour_Feb24.csv')
 
+# All diffusion
+all_diff <- read.csv("/Users/hwillis_admin/Desktop/PostDocs/Projects/Rehab_Project/MRI/Diffusion/data/sharing/share/mean_blind_tractmeasures.csv")
+
 # Diffusion change
 change_all <- read.csv("change_all.csv")
 change_all_distal <- read.csv("change_all_distal.csv")
@@ -301,7 +304,7 @@ p5
 
 ```
 
-### Figure 8: Sighted dLGN-hMT+ (supplementary materials)
+### Figure 7: Sighted dLGN-hMT+ (supplementary materials)
 ```{r}
 # Calculate the standard error of the mean (SEM) for each node and timepoint
 hMT_distal_data_trained_fig_sight <- hMT_distal_data_trained_only_sight %>%
@@ -415,6 +418,38 @@ model <- lm(change_motion_improve_ndr~area_improve_hvf, data=ppt_details_changex
 summary(model)
 
 ```
+
+# Mean diffusion changes
+```{r}
+## VPL
+  ## BASIC STATS
+  basic_stats <- group_by(vpl, sessionID) %>%
+      summarise(
+        count = n(),
+        FA_median = median(average_FA, na.rm = TRUE),
+        FA_IQR = IQR(average_FA, na.rm = TRUE),
+      )
+
+## V1
+  ## BASIC STATS
+  basic_stats <- group_by(v1, sessionID) %>%
+      summarise(
+        count = n(),
+        median = median(average_FA, na.rm = TRUE),
+        IQR = IQR(average_FA, na.rm = TRUE)
+      )
+
+## hMT+
+  ## BASIC STATS
+  basic_stats <- group_by(hMT, sessionID) %>%
+      summarise(
+        count = n(),
+        median = median(average_FA, na.rm = TRUE),
+        IQR = IQR(average_FA, na.rm = TRUE)
+      )
+  
+```
+
 
 # Mean diffusion metrics and behaviour
 ```{r} 
